@@ -1,7 +1,7 @@
 """Unit test `Agent` class."""
 
 import unittest
-from star_ray import Agent, Actuator, Sensor
+from demistar import Agent, Actuator, Sensor
 
 
 class TestAgent(unittest.TestCase):

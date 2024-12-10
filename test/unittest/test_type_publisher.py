@@ -2,7 +2,7 @@
 
 import unittest
 from typing import Any
-from star_ray.pubsub import TypePublisher, Subscriber
+from demistar.pubsub import TypePublisher, Subscriber
 
 
 class A:  # noqa: D101

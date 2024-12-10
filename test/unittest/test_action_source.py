@@ -1,8 +1,8 @@
 """Test case for action source - the source of an actio is composed of the ID of the agent and the executing component, this should be recoverable."""
 
 import unittest
-from star_ray.agent import Agent, Sensor, Actuator, Component
-from star_ray.event import Action
+from demistar.agent import Agent, Sensor, Actuator, Component
+from demistar.event import Action
 
 
 class MyAgent(Agent):  # noqa

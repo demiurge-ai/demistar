@@ -2,7 +2,7 @@
 
 import unittest
 from typing import Any
-from star_ray.utils.type_routing import TypeRouter
+from demistar.utils.type_routing import TypeRouter
 
 
 class A:  # noqa: D101

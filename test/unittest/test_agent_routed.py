@@ -2,7 +2,7 @@
 
 import unittest
 
-from star_ray.agent import (
+from demistar.agent import (
     Component,
     Sensor,
     Actuator,
@@ -11,7 +11,7 @@ from star_ray.agent import (
     attempt,
     decide,
 )
-from star_ray.event import Event
+from demistar.event import Event
 
 
 class EventA(Event):  # noqa: D101

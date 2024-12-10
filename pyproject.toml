@@ -1,5 +1,5 @@
 [project]
-name = "star_ray"
+name = "demistar"
 version = "0.0.8"
 description = "A multi-agent simulation platform based on the distributed computing platform `ray`."
 authors = [{name = "Benedict Wilkins", email = "benrjw@gmail.com"}]
@@ -16,15 +16,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/dicelab-rhul/star-ray"
-
-[project.optional-dependencies]
-xml = [
-    "star_ray_xml>=0.0.6"
-]
-pygame = [
-    "star_ray_pygame>=0.0.8"
-]
+Repository = "https://github.com/demiurge-ai/demistar"
 
 [build-system]
 requires = ["setuptools", "wheel"]

@@ -1,8 +1,8 @@
 """Unit tests for the @attempt decorator."""
 
 import unittest
-from star_ray.utils import TypeRouter
-from star_ray.agent import Actuator, attempt
+from demistar.utils import TypeRouter
+from demistar.agent import Actuator, attempt
 
 
 class A:  # noqa: D101

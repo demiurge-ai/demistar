@@ -1,8 +1,8 @@
 """Unit tests for the @observe decorator."""
 
 import unittest
-from star_ray.agent import observe
-from star_ray.utils import TypeRouter
+from demistar.agent import observe
+from demistar.utils import TypeRouter
 
 
 class A:  # noqa: D101

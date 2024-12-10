@@ -3,11 +3,11 @@
 import copy
 import unittest
 from typing import Any
-from star_ray.agent import Actuator, Sensor, attempt
-from star_ray.event import Event
+from demistar.agent import Actuator, Sensor, attempt
+from demistar.event import Event
 from unittest.mock import MagicMock
 
-from star_ray.pubsub import Subscribe
+from demistar.pubsub import Subscribe
 
 
 class MyActuator(Actuator):
