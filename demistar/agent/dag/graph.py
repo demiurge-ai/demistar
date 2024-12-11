@@ -6,6 +6,13 @@ import networkx as nx
 import io
 
 
+class ComputeGraphHalt(Exception):
+    """This will signal the compute graph that the current node failed in its execution, any nodes that depend on the failing node will not be executed.
+
+    This can be used to manage dynamic dependencies - e.g. if a node is removed during the computation.
+    """
+
+
 class ComputeGraph:
     """A DAG for computing functions (or other objects) that depend on each other in a pipeline."""
 
@@ -21,6 +28,33 @@ class ComputeGraph:
             bool: True if the graph is empty, False otherwise.
         """
         return len(self._graph.nodes) == 0
+
+    def replace_node(self, old: Any, new: Any):
+        """Replace a node in the graph with a new node.
+
+        Args:
+            old (Any): The old node to replace.
+            new (Any): The new node.
+
+        Raises:
+            ValueError: If the old node does not exist in the graph.
+        """
+        if old not in self._graph:
+            raise ValueError(f"Node {old} does not exist in the graph.")
+
+        # Get the attributes and edges of the old node
+        node_attributes = self._graph.nodes[old]
+        edges = list(self._graph.edges(old, data=True))
+
+        # Remove the old node
+        self._graph.remove_node(old)
+
+        # Add the new node with the same attributes
+        self._graph.add_node(new, **node_attributes)
+
+        # Re-add the edges to the new node
+        for _, neighbor, edge_attributes in edges:
+            self._graph.add_edge(new, neighbor, **edge_attributes)
 
     def add_edge(self, func1: Any, arg_name: str, func2: Any):
         """Add an edge to the graph.
@@ -67,16 +101,24 @@ class ComputeGraph:
 
         async def execute_node(func):
             # Gather arguments for the current function
-            args = {
-                self._graph.edges[predecessor, func]["arg_name"]: await futures[
-                    predecessor
-                ]
-                for predecessor in self._graph.predecessors(func)
-            }
-            # Add any initial arguments
-            args.update(initial_args.get(func, {}))
-            # Execute the function and store the result
-            result = await self._execute(func, args)
+            try:
+                args = {
+                    self._graph.edges[predecessor, func]["arg_name"]: await futures[
+                        predecessor
+                    ]
+                    for predecessor in self._graph.predecessors(func)
+                }
+                # Add any initial arguments
+                args.update(initial_args.get(func, {}))
+                # Execute the function and store the result
+                result = await self._execute(func, args)
+            except ComputeGraphHalt:
+                # Set the result in the future, this will cascade of stop compute
+                futures[func].set_exception(ComputeGraphHalt())
+                return func, None  # this is ok
+            except Exception as e:
+                futures[func].set_exception(ComputeGraphHalt())
+                raise e
             # Set the result in the future
             futures[func].set_result(result)
             return func, result
@@ -93,7 +135,14 @@ class ComputeGraph:
                 pending, return_when=asyncio.FIRST_COMPLETED
             )
             for task in done:
-                yield task.result()
+                func, result = task.result()
+                try:
+                    # this will return immediately since the task is already done.
+                    # needs to be explicitly awaited, this could be done in execute_node ! <- TODO
+                    await futures[func]
+                except ComputeGraphHalt:
+                    pass  # the compute graph was halted for this node
+                yield func, result
 
     def __repr__(self):  # noqa
         return str(self)

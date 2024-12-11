@@ -60,11 +60,11 @@ class Actuator(Component):
         self._actions.extend(actions)
         self._actions = list(filter(None, self._actions))
         # set the source of these actions to this actuator
-        Component.set_action_source(self, self._actions)
+        Component.set_event_source(self, self._actions)
         # attempt the sense act and get the resulting observations
         observations = state.__update__(self._actions)
         # preprocess the observations ready to be received by the agent
-        self._observations.push_all(self.__transduce__(observations))
+        self._observations.push_all(observations)
         # clear sense actions ready for the next execution cycle
         self._actions.clear()
 

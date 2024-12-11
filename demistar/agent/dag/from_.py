@@ -17,6 +17,8 @@ See also `agent.dag.ComputeGraph`.
 from typing import Callable, Any, Generic, TypeVar  # noqa: UP035
 
 import inspect
+
+from demistar.agent.component.sensor import Sensor
 from .graph import ComputeGraph
 
 T = TypeVar("T")
@@ -38,16 +40,21 @@ class From(Generic[T]):
         self._argument_name = None  # the name of the argument
 
     @classmethod
-    def build(cls, instance: Any) -> ComputeGraph:
+    def build(
+        cls, instance: Any, _wrap: Callable[[Callable], Any] | None = None
+    ) -> ComputeGraph:
         """Build the compute graph for the given instance or function."""
+        if _wrap is None:
+            _wrap = lambda x: x  # noqa :)
+
         graph = ComputeGraph()
         if inspect.isfunction(instance):
             # some dependencies were found, we can build the graph for this!
-            graph = _build_for_function(instance, graph)
+            graph = _build_for_function(instance, graph, _wrap)
             if graph.is_empty():
                 raise ValueError(f"Function: {instance} has no named `From` arguments")
         else:
-            graph = _build_for_instance(instance, graph)
+            graph = _build_for_instance(instance, graph, _wrap)
         return graph
 
     @classmethod
@@ -91,7 +98,16 @@ class From(Generic[T]):
         return f"From({self._argument_name}->{self._func})"
 
 
-def _build_for_instance(instance: Any, graph: ComputeGraph) -> ComputeGraph:
+class Observe(From):
+    """A `From` dependency that uses the most recent observation from a sensor of a given type."""
+
+    def __init__(self, sensor: type[Sensor]):
+        super().__init__(sensor)
+
+
+def _build_for_instance(
+    instance: Any, graph: ComputeGraph, _wrap: Callable[[Callable], Any]
+) -> ComputeGraph:
     functions = {
         func.__func__: func
         for _, func in inspect.getmembers(instance, predicate=inspect.ismethod)
@@ -103,17 +119,19 @@ def _build_for_instance(instance: Any, graph: ComputeGraph) -> ComputeGraph:
             if from_._func in functions:
                 # use the bound function for the given instance
                 bound_func = functions[from_._func]
-                graph.add_edge(bound_func, arg_name, func)
+                graph.add_edge(_wrap(bound_func), arg_name, _wrap(func))
             else:
-                graph.add_edge(from_._func, arg_name, func)
-                _build_for_function(from_._func, graph)
+                graph.add_edge(_wrap(from_._func), arg_name, _wrap(func))
+                _build_for_function(from_._func, graph, _wrap)
 
     return graph
 
 
-def _build_for_function(func: Callable, graph: ComputeGraph) -> ComputeGraph:
+def _build_for_function(
+    func: Callable, graph: ComputeGraph, _wrap: Callable[[Callable], Any]
+) -> ComputeGraph:
     for arg_name, from_ in From.resolve_dependencies(func).items():
         # all functions will already be bound
-        graph.add_edge(from_._func, arg_name, func)
-        _build_for_function(from_._func, graph)
+        graph.add_edge(_wrap(from_._func), arg_name, _wrap(func))
+        _build_for_function(from_._func, graph, _wrap)
     return graph

@@ -10,9 +10,9 @@ from .event import Event
 
 
 class Observation(Event):
-    """Base class for an observation. Contains `values` (any type) which holds the observed data."""
+    """Base class for an observation. Contains `value` (any type) which holds the observed data."""
 
-    values: Any = Field(default_factory=lambda: None)
+    value: Any = Field(default_factory=lambda: None)
 
 
 class ActiveObservation(Observation):

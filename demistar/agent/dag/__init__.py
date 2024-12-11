@@ -3,7 +3,7 @@
 TODO give details & examples.
 """
 
-from .graph import ComputeGraph
+from .graph import ComputeGraph, ComputeGraphHalt
 from .from_ import From
 
-__all__ = ["ComputeGraph", "From"]
+__all__ = ["ComputeGraph", "From", "ComputeGraphHalt"]

@@ -80,6 +80,38 @@ class TestFrom(unittest.TestCase):
 
         asyncio.run(_run())
 
+    def test_multi_dependency(self):
+        i = 0
+
+        async def func_N() -> int:
+            nonlocal i
+            i += 1
+            return i
+
+        # n should be the same as for func_S
+        async def func_T(n: int = From(func_N)) -> int:
+            return n
+
+        # n should be the same as for func_T
+        async def func_S(n: int = From(func_N)) -> int:
+            return n
+
+        async def func_ST(s: int = From(func_S), t: int = From(func_T)) -> int:
+            return s + t
+
+        async def run(n):
+            graph = From.build(func_ST)
+            results = {}
+            async for func, result in graph.run({}):
+                results[func] = result
+            self.assertEqual(results[func_ST], n)
+
+        async def run_test():
+            await run(2)
+            await run(4)
+
+        asyncio.run(run_test())
+
     def test_no_dependencies(self):
         """Test that an error is raised if no dependencies are found."""
 

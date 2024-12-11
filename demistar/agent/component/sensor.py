@@ -86,13 +86,19 @@ class Sensor(Component, Subscriber):
         self._actions = list(filter(None, self._actions))
 
         # set the source of these actions to this sensor
-        Component.set_action_source(self, self._actions)
+        Component.set_event_source(self, self._actions)
         # attempt the sense act and get the resulting observations
         observations = state.__select__(self._actions)
         # preprocess the observations ready to be received by the agent
-        self._observations.push_all(self.__transduce__(observations))
+        self._observations.push_all(observations)
         # clear sense actions ready for the next execution cycle
         self._actions.clear()
+
+    def on_add(self, agent: Agent) -> None:  # noqa: D102
+        super().on_add(agent)
+        # call __subscribe__ to take initial subscription actions (if there are any)
+        self._actions.extend(self.__subscribe__())
+        Sensor.set_subscriber(self, self._actions)
 
     def __notify__(self, message: Event) -> None:
         """Called by a `Publisher` with events that the sensor has subscribed to receive.
@@ -100,24 +106,7 @@ class Sensor(Component, Subscriber):
         Args:
             message (Event): the event that sensor has subscribed to receive.
         """
-        self._observations.push_all(self.__transduce__([message]))
-
-    def __subscribe__(self) -> list[Subscribe]:
-        """Subscription actions for this `Sensor`, these actions will be taken on the first call to `__query__`. During the lifetime of this `Sensor` subscription actions can be taken in the usual way as with any other action.
-
-        Returns:
-            List[Subscribe]: list of `Subscribe` actions to take.
-
-        Example:
-            TODO
-        """
-        return []
-
-    def on_add(self, agent: Agent) -> None:  # noqa: D102
-        super().on_add(agent)
-        # call __subscribe__ to take initial subscription actions (if there are any)
-        self._actions.extend(self.__subscribe__())
-        Sensor.set_subscriber(self, self._actions)
+        self._observations.push_all([message])
 
     def __sense__(self) -> list[Event]:
         """This method can be overridden to create a `Sensor` that does not depend on calls to `attempt` methods. This is useful if the `Sensor` should always sense the same kind of data.
@@ -135,9 +124,17 @@ class Sensor(Component, Subscriber):
         """
         return []
 
+    def __subscribe__(self) -> list[Subscribe]:
+        """Subscription actions for this `Sensor`, these actions will be taken on the first call to `__query__`. During the lifetime of this `Sensor` subscription actions can be taken in the usual way as with any other action.
+
+        Returns:
+            List[Subscribe]: list of `Subscribe` actions to take, defaults to none.
+        """
+        return []
+
     @staticmethod
     def set_subscriber(sensor: Sensor, actions: list[Subscribe | Unsubscribe]):
-        """Sets the subscriber to the given sensor sensor if it is None for each action in actions.
+        """Sets the subscriber to the given sensor if it is None for each action in actions.
 
         Args:
             sensor (Sensor): sensor to use as the subscriber.
@@ -145,6 +142,5 @@ class Sensor(Component, Subscriber):
         """
         for action in actions:
             if action.subscriber is None:
-                # TODO this will currently call __notify__ of the agent... not this sensor!
-                # it only works locally at the moment
+                # TODO it only works locally at the moment
                 action.subscriber = sensor

@@ -1,27 +1,27 @@
 import unittest
 import asyncio
-from demistar.agent.dag import ComputeGraph
+from demistar.agent.dag import ComputeGraph, ComputeGraphHalt
 
 
 # Example async functions for testing
 async def func_a():  # noqa
-    await asyncio.sleep(0.1)
     return "A"
 
 
 async def func_b(a):  # noqa
-    await asyncio.sleep(0.1)
     return f"B({a})"
 
 
 async def func_c(a):  # noqa
-    await asyncio.sleep(0.1)
     return f"C({a})"
 
 
 async def func_d(b, c):  # noqa
-    await asyncio.sleep(0.1)
     return f"D({b}, {c})"
+
+
+async def func_fail():
+    raise ComputeGraphHalt()
 
 
 class TestComputeGraph(unittest.TestCase):
@@ -58,6 +58,22 @@ class TestComputeGraph(unittest.TestCase):
             self.assertEqual(results[func_b], "B(A)")
             self.assertEqual(results[func_c], "C(A)")
             self.assertEqual(results[func_d], "D(B(A), C(A))")
+
+        asyncio.run(run_test())
+
+    def test_run_and_halt_graph(self):
+        """Test halting of one line of the graph the graph."""
+        self.graph.add_edge(func_fail, "a", func_b)
+        self.graph.add_edge(func_a, "a", func_c)
+
+        async def run_test():
+            results = {}
+            async for func, result in self.graph.run({}):
+                results[func] = result
+            self.assertEqual(results[func_a], "A")
+            self.assertEqual(results[func_b], None)
+            self.assertEqual(results[func_c], "C(A)")
+            self.assertEqual(results[func_fail], None)
 
         asyncio.run(run_test())
 
