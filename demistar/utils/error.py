@@ -9,6 +9,10 @@ if TYPE_CHECKING:
 __all__ = ("UnknownEventType",)
 
 
+class DemistarInternalError(Exception):
+    """Exception raised when an internal error occurs in Demistar."""
+
+
 class UnknownEventType(TypeError):
     """Exception raised when an unknown event type is encountered."""
 

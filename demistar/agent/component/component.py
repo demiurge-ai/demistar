@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 from ...event import Observation, Action, Event
-from .._observations import _Observations
+from ._observations import _Observations
 from ...utils import int64_uuid
 
 if TYPE_CHECKING:
@@ -31,7 +31,7 @@ class Component(ABC):
         # actions to attempt in the current cycle to produce observations
         self._actions: list[Action] = []  # TODO allow async access here?
         # observations that result from taking action
-        self._observations: _Observations = _Observations.empty()
+        self._observations: _Observations = _Observations()
 
     def on_add(self, agent: Agent) -> None:
         """Callback for when this `Component` is added to an `Agent`.
@@ -48,7 +48,7 @@ class Component(ABC):
             agent (Agent): agent that this `Component` was removed from to.
         """
         self._agent = None
-        self._observations.close()
+        self._observations.cancel()
 
     @property
     def id(self):

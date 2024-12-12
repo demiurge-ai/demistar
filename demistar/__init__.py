@@ -13,6 +13,8 @@ from .agent import (
 )
 from .event import Event
 
+from .utils import error
+
 __all__ = (
     "Environment",
     "Ambient",
@@ -25,4 +27,5 @@ __all__ = (
     "Sensor",
     "IOSensor",
     "Event",
+    "error",
 )

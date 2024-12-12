@@ -1,11 +1,16 @@
+"""Unit test for `_Observations` class."""
+
 import unittest
-from unittest.mock import MagicMock, patch
 import asyncio
-from demistar.agent._observations import _Observations
+from unittest.mock import MagicMock
+
+from demistar.agent.component._observations import _Observations
 from demistar.event import Event
 
 
 class TestObservations(unittest.TestCase):
+    """Unit test for `_Observations` class."""
+
     def setUp(self):  # noqa
         # Mock Event and ray.ObjectRef
         self.event1 = MagicMock(spec=Event)
@@ -19,7 +24,7 @@ class TestObservations(unittest.TestCase):
 
     def test_empty(self):
         """Test the empty method of the _Observations class."""
-        obs = _Observations.empty()
+        obs = _Observations()
         self.assertTrue(obs.is_empty())
 
     def test_push_and_pop(self):
@@ -64,7 +69,7 @@ class TestObservations(unittest.TestCase):
         async def push_events():
             obs.push(self.event1)
             obs.push(self.event2)
-            obs.close()
+            obs.cancel()
 
         async def main():
             await asyncio.gather(_test_async_iter(), push_events())
@@ -84,7 +89,7 @@ class TestObservations(unittest.TestCase):
         async def push_events():
             obs.push(self.event1)
             obs.push(self.event2)
-            obs.close()
+            obs.cancel()
 
         async def main():
             await asyncio.gather(_test_async_iter(), push_events())

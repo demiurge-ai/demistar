@@ -22,14 +22,14 @@ class TestActionId(unittest.TestCase):
         agent.add_component(sensor)
         agent.add_component(actuator)
         action = Action()
-        Component.set_action_source(sensor, [action])
-        component_id, agent_id = Component.unpack_source(action)
+        Component.set_event_source(sensor, [action])
+        component_id, agent_id = Component.unpack_event_source(action)
         self.assertEqual(component_id, sensor.id)
         self.assertEqual(agent_id, agent.id)
 
         action = Action()
-        Component.set_action_source(actuator, [action])
-        component_id, agent_id = Component.unpack_source(action)
+        Component.set_event_source(actuator, [action])
+        component_id, agent_id = Component.unpack_event_source(action)
         self.assertEqual(component_id, actuator.id)
         self.assertEqual(agent_id, agent.id)
 

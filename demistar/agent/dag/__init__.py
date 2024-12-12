@@ -4,6 +4,7 @@ TODO give details & examples.
 """
 
 from .graph import ComputeGraph, ComputeGraphHalt
+from .graph_agent import ComputeGraphAgent
 from .from_ import From
 
-__all__ = ["ComputeGraph", "From", "ComputeGraphHalt"]
+__all__ = ["ComputeGraph", "ComputeGraphAgent", "From", "ComputeGraphHalt"]

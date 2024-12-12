@@ -23,7 +23,7 @@ from .dag import From
 # from .agent_routed import AgentRouted, decide, observe
 
 from .component import (
-    # attempt,
+    attempt,
     Component,
     Sensor,
     Actuator,
@@ -36,9 +36,9 @@ __all__ = (
     "Agent",
     "AsyncAgent",
     # "AgentRouted",
-    # "decide",
-    #     "attempt",
-    #     "observe",
+    "decide",
+    "attempt",
+    "observe",
     "Component",
     "Sensor",
     "IOSensor",

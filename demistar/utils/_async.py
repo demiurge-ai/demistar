@@ -7,7 +7,17 @@ from typing import Any
 from collections.abc import Callable
 
 
-__all__ = ("_Future",)
+__all__ = ("_Future", "EmptyAsyncIterator")
+
+
+class EmptyAsyncIterator:
+    """A placeholder async iterator that always raises StopAsyncIteration."""
+
+    async def __aiter__(self):  # noqa
+        return self
+
+    async def __anext__(self):  # noqa
+        raise StopAsyncIteration
 
 
 class _Future:

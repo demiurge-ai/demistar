@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 from abc import abstractmethod, ABC
-import inspect
 
 from .component import Sensor, Actuator, Component
-from .dag import From, ComputeGraph, ComputeGraphHalt
+from .dag import ComputeGraphAgent
 
 from ..utils import int64_uuid
+
 
 from typing import TYPE_CHECKING, TypeVar
 
@@ -17,35 +17,6 @@ if TYPE_CHECKING:
 
 S = TypeVar("S", bound=Sensor)
 A = TypeVar("A", bound=Actuator)
-
-
-class _ObserveFunction:
-    def __init__(self, sensors: set[Sensor]):
-        self._aiters = {sensor.id: sensor.aiter_observations() for sensor in sensors}
-
-    async def __call__(self):
-        if len(self._aiters) == 0:
-            raise ComputeGraphHalt()  # if no sensor is avaliable, dont continue the compute graph
-        if len(self._aiters) == 1:
-            try:
-                return await next(iter(self._aiters.values())).__anext__()
-            except StopAsyncIteration:
-                self._aiters.clear()  # the last sensor was removed...
-                raise ComputeGraphHalt()
-        else:
-            result = set()
-            for sensor in self._aiters.keys():
-                try:
-                    result.add(await self._aiters[sensor].__anext__())
-                except StopAsyncIteration:
-                    # the sensor was probably removed
-                    del self._aiters[sensor]
-            if len(result) == 0:
-                raise ComputeGraphHalt()
-            elif len(result) == 1:
-                return result.pop()
-            else:
-                return result
 
 
 class Agent(ABC):
@@ -115,6 +86,9 @@ class Agent(ABC):
         """
         super().__init__(*args, **kwargs)
         self._id = int64_uuid()
+        # build the compute graph for this agent - it allows one to use dependency injection as an architecture
+        self.__computegraph__ = ComputeGraphAgent(self)
+
         self._sensors: set[Sensor] = set()
         self._actuators: set[Actuator] = set()
 
@@ -133,23 +107,6 @@ class Agent(ABC):
             raise ValueError(
                 "Components were not added to this agent upon initialisation, did you override `add_component` and forget to call super()?"
             )
-
-        # build the compute graph from all sensors and actuators aswell!
-        graph = From.build(self)
-        # for each From(Sensor) replace it with the actual sensor
-
-        to_replace = {}
-        for node in graph._graph.nodes:
-            if inspect.isclass(node):
-                if issubclass(node, Sensor):
-                    # this node needs to be replaced with the actual sensor
-                    sensors = self.get_sensors(oftype=node)
-                    to_replace[node] = _ObserveFunction(sensors)
-
-        for node, replacement in to_replace.items():
-            graph.replace_node(node, replacement)
-
-        self.__computegraph__ = graph
 
     @property
     def sensors(self) -> set[Sensor]:
@@ -272,6 +229,7 @@ class Agent(ABC):
         """
         if isinstance(component, Sensor):
             self._sensors.add(component)
+            self.__computegraph__.on_add_sensor(component)
         elif isinstance(component, Actuator):
             self._actuators.add(component)
         else:
@@ -293,6 +251,7 @@ class Agent(ABC):
         """
         if isinstance(component, Sensor):
             self._sensors.remove(component)
+            self.__computegraph__.on_remove_sensor(component)
         elif isinstance(component, Actuator):
             self._actuators.remove(component)
         else:

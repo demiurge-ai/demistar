@@ -22,6 +22,10 @@ Repository = "https://github.com/demiurge-ai/demistar"
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.pylint]
+ignored-modules = ["pytest"]
+ignored-classes = ["fixture"]
+disable = ["redefined-outer-name"]
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
