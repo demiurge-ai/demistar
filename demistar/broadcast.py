@@ -1,12 +1,25 @@
+"""TODO document."""
+
 import asyncio
-from typing import AsyncGenerator, Set, TypeVar, AsyncIterator
+from typing import (
+    TypeVar,
+)
+from collections.abc import (
+    AsyncIterator,
+    AsyncIterable,
+    AsyncGenerator,
+    Iterator,
+    Iterable,
+    Generator,
+)
+import inspect
 import weakref
 
 T = TypeVar("T")
 
 
 class BroadcastStream:
-    """Broadcast an async iterator to multiple listeners.
+    """Broadcast an iterator to multiple listeners.
 
     Example:
         ```python
@@ -28,10 +41,14 @@ class BroadcastStream:
         ```
     """
 
+    STOP_SENTINAL = object()
+
     def __init__(
         self,
-        source: AsyncGenerator[T, None],
-        *args,
+        source: AsyncIterator[T]
+        | Iterator[T]
+        | AsyncGenerator[T, None]
+        | Generator[T, None, None],
         wait: int = 0,
         **kwargs,
     ):
@@ -40,8 +57,13 @@ class BroadcastStream:
         Args:
             source (AsyncGenerator[T, None]): The source to broadcast.
             wait (int, optional): Whether to wait for subscribers to subscribe before broadcasting. Defaults to 0, which means the broadcaster will start broadcasting immediately.
+            **kwargs: Additional named arguments.
         """
         self.source = source
+        if not self.is_async() or not self.is_sync():
+            raise TypeError(
+                f"`source` must be an iteratable type, but is: {type(self.source)}"
+            )
         self._subscribers: set[asyncio.Queue] = weakref.WeakSet()
         # set when the broadcast is started
         self._is_broadcasting = asyncio.Future()
@@ -51,6 +73,19 @@ class BroadcastStream:
         self._wait_for = wait
         # condition use to check is required subscribers has been reached
         self._wait_condition = asyncio.Condition() if wait > 0 else None
+
+    def is_sync(self) -> bool:
+        """Check if the broadcast source is a synchronous iterable."""
+        return isinstance(
+            self.source, Iterator | Generator | Iterable
+        ) or inspect.isasyncgen(self.source)
+
+    def is_async(self) -> bool:
+        """Check if the broadcast source is a asynchronous iterable."""
+        # fallback on inspect, sometimes types are not correct... - e.g. <class async_generator> doesnt seem to work well with AsyncGenerator
+        return isinstance(
+            self.source, AsyncIterator | AsyncGenerator | AsyncIterable
+        ) or inspect.isgenerator(self.source)
 
     def is_broadcasting(self) -> bool:
         """Check if the broadcast is currently broadcasting."""
@@ -79,7 +114,7 @@ class BroadcastStream:
         try:
             while not self._is_done or not queue.empty():
                 item = await queue.get()
-                if item is StopAsyncIteration:  # Special signal to stop
+                if item is BroadcastStream.STOP_SENTINAL:  # Special signal to stop
                     break
                 yield item
         except StopAsyncIteration:
@@ -105,35 +140,53 @@ class BroadcastStream:
         await self._wait_on_subscribers()
         self._is_broadcasting.set_result(None)
         try:
-            if hasattr(self.source, "__aenter__") and hasattr(self.source, "__aexit__"):
-                return await self._broadcast_with_async_context_manager()
-            elif hasattr(self.source, "__enter__") and hasattr(self.source, "__exit__"):
-                return await self._broadcast_with_sync_context_manager()
+            if self.is_async():
+                return await self._broadcast_async()
+            elif self.is_sync():
+                return await self._broadcast_sync()
             else:
-                return await self._broadcast()
+                raise TypeError("`source` must be AsyncIterable or Iterable")
         finally:
             for queue in self._subscribers:
-                await queue.put(StopAsyncIteration)
+                await queue.put(BroadcastStream.STOP_SENTINAL)
             self._is_done = True
 
-    async def _broadcast(self):
+    def _has_async_context_manager(self) -> bool:
+        """Check if the source has a context manager."""
+        return hasattr(self.source, "__aenter__") and hasattr(self.source, "__aexit__")
+
+    def _has_sync_context_manager(self) -> bool:
+        """Check if the source has a context manager."""
+        return hasattr(self.source, "__enter__") and hasattr(self.source, "__exit__")
+
+    async def _broadcast_async(self):
         async for item in self._get_source_aiter(self.source):
             for queue in self._subscribers:
                 await queue.put(item)
 
+    # TODO remove, not used
     async def _broadcast_with_async_context_manager(self):
         async with self.source as source:
             async for item in self._get_source_aiter(source):
                 for queue in self._subscribers:
                     await queue.put(item)
 
-    async def _broadcast_with_sync_context_manager(self):
-        # TODO the return of __enter__ is not used?
-        async with self.source as source:
-            async for item in self._get_source_aiter(source):
-                for queue in self._subscribers:
-                    await queue.put(item)
+    def _broadcast_sync(self):
+        for item in self.source:
+            for queue in self._subscribers:
+                queue.put_nowait(item)
 
-    def _get_source_aiter(self, source: AsyncIterator[T]) -> AsyncIterator[T]:
-        """We prefer to use __astream__ over __iter__  to allow __aiter__ be used by consumers of `source` - rather than having them call a special method for this. See `Resource` for an example of this."""
+    # TODO remove, not used
+    def _broadcast_with_sync_context_manager(self):
+        with self.source as source:
+            for item in source:
+                for queue in self._subscribers:
+                    queue.put_nowait(item)
+
+    def _get_source_aiter(
+        self, source: AsyncIterator[T] | AsyncGenerator[T, None]
+    ) -> AsyncIterator[T] | AsyncGenerator[T, None]:
+        """We prefer to use __astream__ over __aiter__  to allow __aiter__ to be used by consumers of `source` - rather than having them call a special method for this. See `Resource` for an example."""
+        if not hasattr(source, "__aiter__"):
+            return source  # the source is probably a generator, just use it as is.
         return getattr(source, "__astream__", source.__aiter__)()

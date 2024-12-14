@@ -6,15 +6,22 @@ import asyncio
 from demistar.resource import Resource
 
 
-class AsyncResource(Resource[str]):
+class AsyncResource(Resource[int, int]):
     """A resource that only implements async iteration."""
 
-    def __init__(self, values: list[str], **kwargs):  # noqa
+    def __init__(self, values: list[int], **kwargs):  # noqa
         super().__init__(**kwargs)
         self.values = values
         self.index = 0
 
-    async def get(self) -> str:  # noqa
+    async def __aenter__(self):
+        self.index += 1
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        self.index = -1
+
+    async def get(self) -> int:  # noqa
         if self.index >= len(self.values):
             raise StopAsyncIteration()
         await asyncio.sleep(0)  # Simulate async work
@@ -51,6 +58,20 @@ class TestResourceAsync:
 
         assert aiter_values == values
 
+    async def test_async_iterator_with_context(self):
+        """Test that async stream works correctly - context manager is used."""
+        values = [1, 2, 3]
+        resource = AsyncResource(values)
+
+        # a single listener can use the resource async directly - but no others should be able to!
+        aiter_values = []
+        assert resource.has_context()
+        async with resource as resource:
+            async for val in resource:
+                aiter_values.append(val)
+
+        assert aiter_values == values[1:]
+
     async def test_async_broadcast_error(self):
         """Test that an error is raised when trying to iterate asynchronously on a non-broadcastable resource."""
         resource = AsyncResource([1])
@@ -72,6 +93,8 @@ class TestResourceAsync:
             result = []
             async for val in resource:
                 result.append(val)
+            # the context manager is used automatically by broadcast!
             assert result == values
 
+        # NOTE: broadcast doesnt use the context manager automatically!
         await asyncio.gather(resource.broadcast(), *[_listen() for _ in range(n)])
