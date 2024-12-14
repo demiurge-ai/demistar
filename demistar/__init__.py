@@ -1,31 +1,12 @@
-"""star-ray (Simulation Test-bed for Agent Research)-ray package."""
+"""Demistar is a package that supports the creation of autonomous agents.
 
-from .environment import Environment, Ambient
-from .agent import (
-    Agent,
-    Component,
-    Actuator,
-    Sensor,
-    IOSensor,
-    # attempt,
-    # observe,
-    # decide,
-)
-from .event import Event
+TODO detailed info.
+"""
 
-from .utils import error
+from .actuator import Actuator
+from .component import Component
+from .sensor import Sensor
+from .graph import From, To
+from .resource import Resource
 
-__all__ = (
-    "Environment",
-    "Ambient",
-    "Agent",
-    # "attempt",
-    # "observe",
-    # "decide",
-    "Component",
-    "Actuator",
-    "Sensor",
-    "IOSensor",
-    "Event",
-    "error",
-)
+__all__ = ["Component", "Sensor", "Actuator", "Resource", "From", "To"]
