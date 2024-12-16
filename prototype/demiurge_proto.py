@@ -1,3 +1,4 @@
+"""Prototyping."""
 # from demistar import Component, Sensor, Actuator, From, To, Resource
 
 # from fastapi.responses import JSONResponse, StreamingResponse

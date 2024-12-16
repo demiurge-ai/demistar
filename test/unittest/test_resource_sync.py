@@ -27,6 +27,8 @@ class SyncResource(Resource[int, int]):
         return val
 
 
+@pytest.mark.asyncio(loop_scope="function")
+@pytest.mark.timeout(2)
 class TestResourceSync:
     """Test the Resource class synchronous iteration functionality."""
 

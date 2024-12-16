@@ -1,13 +1,18 @@
-"""Basic components of an agent: Sensor & Actuator.
+"""Module defines the `Actuator` class, this is a `Component` that can write/send data to a `Resource`."""
 
-- Sensors receive data from the resource (sense)
-- Actuators send data to the resource (act)
-"""
-
+from .component import Component
 from .resource import Resource
 
 
-class Actuator:
+class Actuator(Component):
+    """TODO."""
+
     def __init__(self, resource: Resource, *args, **kwargs):
-        super().__init__()
-        self._resource = resource
+        """Constructor.
+
+        Args:
+            resource: The resource to attach to the component.
+            *args: Additional positional arguments.
+            **kwargs: Additional named arguments.
+        """
+        super().__init__(resource, *args, **kwargs)

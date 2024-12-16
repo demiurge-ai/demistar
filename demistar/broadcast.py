@@ -6,13 +6,11 @@ from typing import (
 )
 from collections.abc import (
     AsyncIterator,
-    AsyncIterable,
     AsyncGenerator,
     Iterator,
-    Iterable,
     Generator,
 )
-import inspect
+from .utils.typing import is_async_iter, is_sync_iter
 import weakref
 
 T = TypeVar("T")
@@ -60,9 +58,9 @@ class BroadcastStream:
             **kwargs: Additional named arguments.
         """
         self.source = source
-        if not self.is_async() or not self.is_sync():
+        if not (self.is_async() or self.is_sync()):
             raise TypeError(
-                f"`source` must be an iteratable type, but is: {type(self.source)}"
+                f"`source` must be an iterable type, but is: {type(self.source)}"
             )
         self._subscribers: set[asyncio.Queue] = weakref.WeakSet()
         # set when the broadcast is started
@@ -76,16 +74,11 @@ class BroadcastStream:
 
     def is_sync(self) -> bool:
         """Check if the broadcast source is a synchronous iterable."""
-        return isinstance(
-            self.source, Iterator | Generator | Iterable
-        ) or inspect.isasyncgen(self.source)
+        return is_sync_iter(self.source)
 
     def is_async(self) -> bool:
         """Check if the broadcast source is a asynchronous iterable."""
-        # fallback on inspect, sometimes types are not correct... - e.g. <class async_generator> doesnt seem to work well with AsyncGenerator
-        return isinstance(
-            self.source, AsyncIterator | AsyncGenerator | AsyncIterable
-        ) or inspect.isgenerator(self.source)
+        return is_async_iter(self.source)
 
     def is_broadcasting(self) -> bool:
         """Check if the broadcast is currently broadcasting."""

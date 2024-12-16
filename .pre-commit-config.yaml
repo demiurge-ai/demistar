@@ -17,7 +17,7 @@ repos:
   hooks:
     - id: run-pytest
       name: Run Pytest
-      entry: pytest
+      entry: pytest -q --timeout=10
       language: system
       types: [python]
       args: [ test ]

@@ -6,27 +6,9 @@ from demistar.broadcast import BroadcastStream
 
 
 @pytest.mark.timeout(2)
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="function")
 class TestBroadcastStream:
     """Test the BroadcastStream class."""
-
-    # async def test_broadcast_with_wait(self):
-    #     """Test basic broadcasting functionality."""
-    #     values = [1, 2, 3]
-
-    #     async def source():
-    #         for x in values:
-    #             yield x
-
-    #     broadcast = BroadcastStream(source(), wait=1)
-
-    #     async def listen():
-    #         results = []
-    #         async for item in broadcast.subscribe():
-    #             results.append(item)
-    #         assert results == values
-
-    #     await asyncio.gather(broadcast.broadcast(), listen(), listen())
 
     async def test_broadcast_without_wait(self):
         """Test broadcasting without waiting for subscribers - check for possible hang."""

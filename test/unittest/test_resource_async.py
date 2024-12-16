@@ -31,7 +31,7 @@ class AsyncResource(Resource[int, int]):
 
 
 @pytest.mark.timeout(2)
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="function")
 class TestResourceAsync:
     """Tests for the Resource class asynchronous iteration functionality."""
 

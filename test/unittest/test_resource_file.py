@@ -23,6 +23,8 @@ def test_file_resource_read_sync():
             assert buffer.getvalue() == content
 
 
+@pytest.mark.asyncio(loop_scope="function")
+@pytest.mark.timeout(1)
 async def test_file_resource_read_async():
     """Test the file resource with async read."""
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -49,7 +51,7 @@ def test_file_resource_write_sync():
     # try also with consume
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="function")
 @pytest.mark.timeout(1)
 async def test_file_resource_write_async():
     """Test the file resource with async write."""
